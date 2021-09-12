@@ -1,14 +1,15 @@
-import asyncio
 import pathlib
 import time
-from functools import lru_cache
 import requests
 from tqdm import trange
 from bs4 import BeautifulSoup
-from requests_html import AsyncHTMLSession, HTMLSession
+from requests_html import HTMLSession
 
 
-URL = "https://www.bundestag.de/ajax/filterlist/de/abgeordnete/525246-525246?limit={limit}&noFilterSet=true&offset={offset}"
+URL = (
+    "https://www.bundestag.de/ajax/filterlist/de/abgeordnete/525246-525246"
+    "?limit={limit}&noFilterSet=true&offset={offset}"
+)
 
 
 def collect_infos(offset=0, limit=20):
@@ -40,27 +41,19 @@ def scrape_all():
     return abgeordnete
 
 
-class Scraper:
-    open_connections = 0
-    limit = 3
+def get_ext(url):
+    *_, ext = url.rpartition(".")
+    return ext
 
-    @classmethod
-    def download_image(cls, session, url, filename):
-        print("Open connections:", cls.open_connections)
-        # while cls.open_connections >= cls.limit:
-        #     print("Sleeping..")
-        #     await asyncio.sleep(1)
-        cls.open_connections += 1
 
-        print("Download", url)
-        try:
-            r = session.get(url)
-        except:
-            breakpoint()
-        *_, ext = url.rpartition(".")
-        with open(f"{filename}.{ext}", "wb") as f:
-            f.write(r.content)
-        cls.open_connections -= 1
+def download_image(session, url, filename):
+    print("Download", url)
+    try:
+        r = session.get(url)
+    except:
+        breakpoint()
+    with open(filename, "wb") as f:
+        f.write(r.content)
 
 
 def write_info(info, filename):
@@ -75,10 +68,14 @@ def scrape():
 
     for i, info in enumerate(infos):
         info_filename = f"info{i:03d}"
-        img_filename = f"img{i:03d}"
+        img_filename = f"img{i:03d}.{get_ext(info['url'])}"
         if not (
-            pathlib.Path(info_filename).exists() or pathlib.Path(img_filename).exists()
+            pathlib.Path(info_filename).exists() and pathlib.Path(img_filename).exists()
         ):
-            Scraper.download_image(session, info["url"], img_filename)
+            download_image(session, info["url"], img_filename)
             time.sleep(0.1)
             write_info(info, info_filename)
+
+
+if __name__ == "__main__":
+    scrape()
