@@ -1,5 +1,6 @@
 import pathlib
 import random
+from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -12,7 +13,7 @@ TEMPLATE = """
   <div id="politician_id" value="{{politician_id}}"></div>
   <div>
   {% for party in parties %}
-    <input type="radio" id="radio-{{party}}" class="party-selector"
+    <input autocomplete="off" type="radio" id="radio-{{party}}" class="party-selector"
      name="party" value="{{party}}" {% if guess == party %} checked {% endif %}>
     <label for="{{party}}">{{party}}</label>
     <br>
@@ -37,16 +38,19 @@ app.mount("/static", StaticFiles(directory="."), name="static")
 
 
 @app.get("/")
-def root():
-    i = random.randint(0, 749)
-    guess_path = pathlib.Path(f"guess{i:03d}")
+def root(id_: Optional[int] = None):
+    if id_ is None:
+        id_ = random.randint(0, 749)
+
+    guess_path = pathlib.Path(f"guess{id_:03d}")
+    guess: Optional[str]
     if guess_path.exists():
-        guess = guess_path.read_text()
+        guess = guess_path.read_text().strip()
         print("Loading guess", guess)
     else:
         guess = None
 
-    img_name = f"/static/img{i:03d}.jpg"
+    img_name = f"/static/img{id_:03d}.jpg"
     return HTMLResponse(
         TMPL.render(
             img=img_name,
@@ -59,7 +63,7 @@ def root():
                 "SPD",
                 "fraktionslos",
             ],
-            politician_id=i,
+            politician_id=id_,
             guess=guess,
         )
     )
