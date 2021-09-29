@@ -20,6 +20,8 @@ TEMPLATE = """
   {% endfor %}
   </div>
 
+  <button id="refresh">Refresh </button>
+
   <script src="/static/app.js"></script>
 """
 
