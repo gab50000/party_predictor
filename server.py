@@ -12,6 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, BaseLoader
 from pydantic import BaseModel
 
+import db
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("server")
 
@@ -41,10 +43,12 @@ TEMPLATE = """
   <script src="/static/app.js"></script>
 """
 
+session = db.Session()
+
 
 class Guess(BaseModel):
     id: int
-    party: str
+    party: Optional[str]
     known: bool = False
 
 
@@ -61,7 +65,15 @@ def init_app(debug):
     app.mount("/static", StaticFiles(directory="."), name="static")
 
     @app.get("/")
-    def root(id_: int):
+    def root(id_: Optional[int] = None):
+        if id_ is None:
+            return HTMLResponse(
+                """
+            <head>
+                <meta http-equiv="Refresh" content="0; URL=/?id_=0">
+            </head>"""
+            )
+
         return HTMLResponse(
             TMPL.render(
                 parties=[
