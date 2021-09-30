@@ -15,16 +15,17 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("server")
 
+GUESS_FILENAME = "guesses/guess_{id_:03d}.json"
 
 TEMPLATE = """
   <div>
     <input autocomplete="off" type="checkbox" id="radio-known" class="known-selector"
-     name="known" value="known">
+     name="known" value="known" {% if known %} checked {% endif %} >
     <label for="known"> I know that guy! </label>
   </div>
 
 <img id="abgeordneten-img" src="{{img}}">
-  <div id="politician_id" value="{{politician_id}}"></div>
+  <div id="politician_id" value="{{id}}"></div>
   <div>
   {% for party in parties %}
     <input autocomplete="off" type="radio" id="radio-{{party}}" class="party-selector"
@@ -35,7 +36,7 @@ TEMPLATE = """
   </div>
 
   <button id="reload"> Reload </button>
-  <button id="refresh"> Refresh </button>
+  <button id="random"> Random </button>
 
   <script src="/static/app.js"></script>
 """
@@ -60,7 +61,7 @@ def init_app(debug):
     app.mount("/static", StaticFiles(directory="."), name="static")
 
     @app.get("/")
-    def root():
+    def root(id_: int):
         return HTMLResponse(
             TMPL.render(
                 parties=[
@@ -72,14 +73,17 @@ def init_app(debug):
                     "SPD",
                     "fraktionslos",
                 ],
+                id=id_,
+                img=f"/static/{load_info(id_).img}",
             )
         )
 
-    @app.get("/load_info")
-    def load_info(id_: Optional[int] = None) -> PolitInfo:
-        if id_ is None:
-            id_ = random.randint(0, 749)
+    @app.get("/random_id")
+    def get_random_id() -> int:
+        return random.randint(0, 749)
 
+    @app.get("/load_info")
+    def load_info(id_: int) -> PolitInfo:
         for ext in ("jpg", "png"):
             img = f"img{id_:03d}.{ext}"
             img_path = pathlib.Path(img)
@@ -94,10 +98,11 @@ def init_app(debug):
 
     @app.get("/load_guess")
     def load_guess(id_: int) -> Guess:
-        guess_path = pathlib.Path(f"guesses/guess_{id_:03d}.json")
+        guess_path = pathlib.Path(GUESS_FILENAME.format(id_=id_))
         if guess_path.exists():
             with open(guess_path, "r") as f:
                 data = json.load(f)
+            logger.info("Data: %s", data)
             guess = Guess(**data)
             logger.info("Loading guess %s", guess)
             return guess
@@ -108,8 +113,8 @@ def init_app(debug):
     def guess_party(guess: Guess):
         id_ = guess.id
         logger.info("Writing guess %s", guess)
-        with open(f"guesses/guess{id_:03d}", "w") as f:
-            json.dump(guess.json(), f)
+        with open(GUESS_FILENAME.format(id_=id_), "w") as f:
+            json.dump(guess.dict(), f)
 
     return app
 

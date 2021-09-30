@@ -44,16 +44,9 @@ function create_radio_action(element) {
 }
 
 function load_data() {
-  let info = get("/load_info");
-  console.log(info);
+  let id = document.getElementById("politician_id").getAttribute("value");
 
-  document
-    .getElementById("abgeordneten-img")
-    .setAttribute("src", `/static/${info.img}`);
-
-  document.getElementById("politician_id").setAttribute("value", info.id);
-
-  let guess = get(`/load_guess?id_=${info.id}`);
+  let guess = get(`/load_guess?id_=${id}`);
 
   if (!guess) {
     console.log("Found no guess");
@@ -87,14 +80,11 @@ document
   .getElementById("radio-known")
   .addEventListener("click", create_radio_action(null));
 
-document.getElementById("refresh").addEventListener("click", function (event) {
-  location.reload();
+document.getElementById("random").addEventListener("click", function (event) {
+  let random_id = get("/random_id");
+  window.location.href = window.location.origin + `?id_=${random_id}`;
 });
 
 window.addEventListener("load", function (event) {
   load_data();
 });
-
-// .addEventListener("click", function(elem){
-//     alert("click")
-// })
