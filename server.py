@@ -43,8 +43,6 @@ TEMPLATE = """
   <script src="/static/app.js"></script>
 """
 
-session = db.Session()
-
 
 class Guess(BaseModel):
     id: int
@@ -109,24 +107,34 @@ def init_app(debug):
         return info
 
     @app.get("/load_guess")
-    def load_guess(id_: int) -> Guess:
-        guess_path = pathlib.Path(GUESS_FILENAME.format(id_=id_))
-        if guess_path.exists():
-            with open(guess_path, "r") as f:
-                data = json.load(f)
-            logger.info("Data: %s", data)
+    def load_guess(id_: int) -> Optional[Guess]:
+        session = db.Session()
+        result = session.query(db.Guess).filter(db.Guess.id == id_).first()
+
+        if result is not None:
+            logger.info("Found guess %s in db", result)
+            data = {"id": result.id, "party": result.party, "known": result.known}
             guess = Guess(**data)
-            logger.info("Loading guess %s", guess)
             return guess
         else:
             logger.info("Guess not found")
 
     @app.post("/guess_party")
     def guess_party(guess: Guess):
+        session = db.Session()
         id_ = guess.id
-        logger.info("Writing guess %s", guess)
-        with open(GUESS_FILENAME.format(id_=id_), "w") as f:
-            json.dump(guess.dict(), f)
+        entry = session.query(db.Guess).filter(db.Guess.id == id_).first()
+
+        if entry:
+            logger.info("Update guess %s", guess)
+            entry.id = guess.id
+            entry.party = guess.party
+            entry.known = guess.known
+        else:
+            logger.info("Create new guess %s", guess)
+            session.add(db.Guess(**guess.__dict__))
+
+        session.commit()
 
     return app
 
