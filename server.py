@@ -19,6 +19,12 @@ GUESS_FILENAME = "guesses/guess_{id_:03d}.json"
 
 TEMPLATE = """
   <div>
+    <input autocomplete="off" type="checkbox" id="radio-show-only-unlabeled" 
+     name="toggle-unlabeleld" value="toggle-known">
+    <label for="toggle-unlabeled"> Show only unlabeled politicians </label>
+  </div>
+
+  <div>
     <input autocomplete="off" type="checkbox" id="radio-known" class="known-selector"
      name="known" value="known" {% if known %} checked {% endif %} >
     <label for="known"> I know that guy! </label>

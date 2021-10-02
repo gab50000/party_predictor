@@ -71,6 +71,18 @@ function load_data() {
   }
 }
 
+function restore_toogle_state() {
+  let enabled_value = "show-only-unlabeled=true";
+  let disabled_value = "show-only-unlabeled=false";
+  let checkbox = document.getElementById("radio-show-only-unlabeled");
+
+  if (document.cookie == enabled_value) {
+    checkbox.setAttribute("checked", "");
+  } else {
+    checkbox.removeAttribute("checked");
+  }
+}
+
 selectors = document.getElementsByClassName("party-selector");
 for (element of selectors) {
   element.addEventListener("click", create_radio_action(element));
@@ -87,4 +99,20 @@ document.getElementById("random").addEventListener("click", function (event) {
 
 window.addEventListener("load", function (event) {
   load_data();
+  restore_toogle_state();
 });
+
+document
+  .getElementById("radio-show-only-unlabeled")
+  .addEventListener("click", function () {
+    let enabled_value = "show-only-unlabeled=true";
+    let disabled_value = "show-only-unlabeled=false";
+    let old_value = document.cookie;
+    console.log("Cookie:", old_value);
+
+    if (old_value == enabled_value) {
+      document.cookie = disabled_value;
+    } else {
+      document.cookie = enabled_value;
+    }
+  });
