@@ -20,3 +20,6 @@ class Guess(Base):
 
     def __repr__(self):
         return f"Guess(id={self.id}, party={self.party}, known={self.known})"
+
+
+meta.create_all(engine)
