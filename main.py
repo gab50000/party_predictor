@@ -3,7 +3,6 @@ import time
 import requests
 from tqdm import trange
 from bs4 import BeautifulSoup
-from requests_html import HTMLSession
 
 
 URL = (
@@ -64,7 +63,7 @@ def write_info(info, filename):
 
 def scrape():
     infos = scrape_all()
-    session = HTMLSession()
+    session = requests.Session()
 
     for i, info in enumerate(infos):
         info_filename = f"info{i:03d}"
