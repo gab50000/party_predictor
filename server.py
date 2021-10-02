@@ -1,10 +1,8 @@
-import json
 import logging
 import pathlib
 import random
 from typing import Optional
 
-import uvicorn
 from fastapi import FastAPI
 from fastapi.logger import logger
 from fastapi.responses import HTMLResponse
@@ -37,7 +35,6 @@ TEMPLATE = """
   {% endfor %}
   </div>
 
-  <button id="reload"> Reload </button>
   <button id="random"> Random </button>
 
   <script src="/static/app.js"></script>
@@ -111,13 +108,15 @@ def init_app(debug):
         session = db.Session()
         result = session.query(db.Guess).filter(db.Guess.id == id_).first()
 
+        guess: Optional[Guess]
         if result is not None:
             logger.info("Found guess %s in db", result)
             data = {"id": result.id, "party": result.party, "known": result.known}
             guess = Guess(**data)
-            return guess
         else:
             logger.info("Guess not found")
+            guess = None
+        return guess
 
     @app.post("/guess_party")
     def guess_party(guess: Guess):
