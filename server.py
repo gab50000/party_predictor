@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, BaseLoader
 from pydantic import BaseModel
+from sqlalchemy import select
 
 import db
 
@@ -92,7 +93,17 @@ def init_app(debug):
         )
 
     @app.get("/random_id")
-    def get_random_id() -> int:
+    def get_random_id(load_only_unknown: bool = False) -> int:
+        if load_only_unknown:
+            session = db.Session()
+            query = select(db.Guess.id)
+            result = session.execute(query).all()
+            if result:
+                labeled_ids = [id_[0] for id_ in result]
+                unlabeled_ids = [i for i in range(0, 750) if i not in labeled_ids]
+                return random.choice(unlabeled_ids)
+            return 0
+
         return random.randint(0, 749)
 
     @app.get("/load_info")

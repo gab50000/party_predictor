@@ -93,7 +93,9 @@ document
   .addEventListener("click", create_radio_action(null));
 
 document.getElementById("random").addEventListener("click", function (event) {
-  let random_id = get("/random_id");
+  let only_unknown = document.cookie === "show-only-unlabeled=true";
+  console.log(only_unknown);
+  let random_id = get(`/random_id?load_only_unknown=${only_unknown}`);
   window.location.href = window.location.origin + `?id_=${random_id}`;
 });
 
