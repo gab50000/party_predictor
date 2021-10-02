@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 
 URL = (
-    "https://www.bundestag.de/ajax/filterlist/de/abgeordnete/525246-525246"
+    "https://www.bundestag.de/ajax/filterlist/de/abgeordnete/862712-862712"
     "?limit={limit}&noFilterSet=true&offset={offset}"
 )
 
