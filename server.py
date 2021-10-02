@@ -101,8 +101,10 @@ def init_app(debug):
             if result:
                 labeled_ids = [id_[0] for id_ in result]
                 unlabeled_ids = [i for i in range(0, 750) if i not in labeled_ids]
+                if unlabeled_ids:
                 return random.choice(unlabeled_ids)
             return 0
+            return random.randint(0, 749)
 
         return random.randint(0, 749)
 
