@@ -59,12 +59,6 @@ def download_image(url) -> bytes:
     return r.content
 
 
-def write_info(info, filename):
-    with open(filename, "w") as f:
-        print("Name:", info["name"], file=f)
-        print("Partei:", info["partei"], file=f)
-
-
 def scrape():
     infos = scrape_all()
 
