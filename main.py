@@ -4,6 +4,9 @@ import requests
 from tqdm import trange
 from bs4 import BeautifulSoup
 
+from sqlalchemy.dialects.sqlite import insert
+
+import db
 
 URL = (
     "https://www.bundestag.de/ajax/filterlist/de/abgeordnete/862712-862712"
@@ -21,16 +24,17 @@ def collect_infos(offset=0, limit=20):
     r = requests.get(url)
     soup = BeautifulSoup(r.content, features="lxml")
     imgs = soup.find_all("img")
+    a_tags = soup.find_all("a", attrs={"title": True})
     ps = soup.find_all("p", attrs={"class": "bt-person-fraktion"})
-    img_urls = [
-        {
-            "name": img["alt"],
+    infos = []
+    for img, p, a in zip(imgs, ps, a_tags):
+        info = {
+            "name": a["title"],
             "url": fix_url(img["data-img-md-normal"]),
             "partei": p.text.strip(),
         }
-        for img, p in zip(imgs, ps)
-    ]
-    return img_urls
+        infos.append(info)
+    return infos
 
 
 def scrape_all():
@@ -45,14 +49,14 @@ def get_ext(url):
     return ext
 
 
-def download_image(session, url, filename):
+def download_image(url) -> bytes:
     print("Download", url)
     try:
-        r = session.get(url)
+        r = requests.get(url)
     except:
         breakpoint()
-    with open(filename, "wb") as f:
-        f.write(r.content)
+
+    return r.content
 
 
 def write_info(info, filename):
@@ -63,17 +67,22 @@ def write_info(info, filename):
 
 def scrape():
     infos = scrape_all()
-    session = requests.Session()
 
-    for i, info in enumerate(infos):
-        info_filename = f"info{i:03d}"
-        img_filename = f"img{i:03d}.{get_ext(info['url'])}"
-        if not (
-            pathlib.Path(info_filename).exists() and pathlib.Path(img_filename).exists()
-        ):
-            download_image(session, info["url"], img_filename)
-            time.sleep(0.1)
-            write_info(info, info_filename)
+    for id_, info in enumerate(infos):
+        img_data = download_image(info["url"])
+        member = db.BundestagMember(id=id_, name=info["name"], party=info["partei"])
+        member_img = db.MemberPhoto(
+            id=id_, image=img_data, image_format=info["url"].split(".")[-1]
+        )
+        session = db.Session()
+        try:
+            session.merge(member)
+            session.merge(member_img)
+            session.commit()
+        except:
+            session.rollback()
+        finally:
+            session.commit()
 
 
 if __name__ == "__main__":

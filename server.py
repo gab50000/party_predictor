@@ -1,3 +1,4 @@
+import base64
 import logging
 import pathlib
 import random
@@ -19,19 +20,30 @@ logger = logging.getLogger("server")
 GUESS_FILENAME = "guesses/guess_{id_:03d}.json"
 
 TEMPLATE = """
+<div class="container-fluid">
+<div class="row">
+<div class="col-9">
   <div>
     <input autocomplete="off" type="checkbox" id="radio-show-only-unlabeled" 
      name="toggle-unlabeleld" value="toggle-known">
     <label for="toggle-unlabeled"> Show only unlabeled politicians </label>
   </div>
+  </div>
+  </div>
 
+<div class="row">
+<div class="col-9">
   <div>
     <input autocomplete="off" type="checkbox" id="radio-known" class="known-selector"
      name="known" value="known" {% if known %} checked {% endif %} >
     <label for="known"> I know that guy! </label>
   </div>
+  </div>
+  </div>
 
-<img id="abgeordneten-img" src="{{img}}">
+<div class="row">
+<div class="col-9">
+<img id="abgeordneten-img" src="data:image/{{img_ext}};base64,{{data}}">
   <div id="politician_id" value="{{id}}"></div>
   <div>
   {% for party in parties %}
@@ -41,10 +53,18 @@ TEMPLATE = """
     <br>
   {% endfor %}
   </div>
+  </div>
+  </div>
 
+<div class="row">
+<div class="col-9">
   <button id="random"> Random </button>
+  </div>
+  </div>
+  </div>
 
   <script src="/static/app.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
 """
 
 
@@ -57,6 +77,7 @@ class Guess(BaseModel):
 class PolitInfo(BaseModel):
     id: int
     img: str
+    img_ext: str
 
 
 TMPL = Environment(loader=BaseLoader()).from_string(TEMPLATE)
@@ -76,6 +97,8 @@ def init_app(debug):
             </head>"""
             )
 
+        info = load_info(id_)
+
         return HTMLResponse(
             TMPL.render(
                 parties=[
@@ -88,7 +111,8 @@ def init_app(debug):
                     "fraktionslos",
                 ],
                 id=id_,
-                img=f"/static/{load_info(id_).img}",
+                data=info.img,
+                img_ext=info.img_ext,
             )
         )
 
@@ -102,23 +126,21 @@ def init_app(debug):
                 labeled_ids = [id_[0] for id_ in result]
                 unlabeled_ids = [i for i in range(0, 750) if i not in labeled_ids]
                 if unlabeled_ids:
-                return random.choice(unlabeled_ids)
-            return 0
+                    return random.choice(unlabeled_ids)
+                return 0
             return random.randint(0, 749)
 
         return random.randint(0, 749)
 
     @app.get("/load_info")
     def load_info(id_: int) -> PolitInfo:
-        for ext in ("jpg", "png"):
-            img = f"img{id_:03d}.{ext}"
-            img_path = pathlib.Path(img)
-            if img_path.exists():
-                break
-        else:
-            raise Exception("No image found!")
+        session = db.Session()
 
-        info = PolitInfo(id=id_, img=img)
+        img_info = (
+            session.query(db.MemberPhoto).filter(db.MemberPhoto.id == id_).first()
+        )
+        data = base64.b64encode(img_info.image).decode("utf-8")
+        info = PolitInfo(id=id_, img=data, img_ext=img_info.image_format)
         logger.info("Loading info %s", info)
         return info
 
