@@ -1,8 +1,13 @@
-from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, Boolean, MetaData, LargeBinary
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
-
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Integer,
+    LargeBinary,
+    MetaData,
+    String,
+    create_engine,
+)
+from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
 
 engine = create_engine("sqlite:///db.sqlite", echo=True)
 meta = MetaData()

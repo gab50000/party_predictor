@@ -1,10 +1,6 @@
-import pathlib
-import time
 import requests
-from tqdm import trange
 from bs4 import BeautifulSoup
-
-from sqlalchemy.dialects.sqlite import insert
+from tqdm import trange
 
 import db
 

@@ -1,6 +1,5 @@
 import base64
 import logging
-import pathlib
 import random
 from typing import Optional
 
@@ -8,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.logger import logger
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Environment, BaseLoader
+from jinja2 import BaseLoader, Environment
 from pydantic import BaseModel
 from sqlalchemy import select
 
