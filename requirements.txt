@@ -1,0 +1,7 @@
+aiofiles
+fastapi
+jinja2
+requests
+sqlalchemy
+tqdm
+uvicorn
