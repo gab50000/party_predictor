@@ -64,15 +64,10 @@ def scrape():
         member_img = db.MemberPhoto(
             id=id_, image=img_data, image_format=info["url"].split(".")[-1]
         )
-        session = db.Session()
-        try:
-            session.merge(member)
-            session.merge(member_img)
-            session.commit()
-        except:
-            session.rollback()
-        finally:
-            session.commit()
+        with db.Session() as session:
+            with session.begin():
+                session.merge(member)
+                session.merge(member_img)
 
 
 if __name__ == "__main__":

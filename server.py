@@ -118,35 +118,41 @@ def init_app(debug):
     @app.get("/random_id")
     def get_random_id(load_only_unknown: bool = False) -> int:
         if load_only_unknown:
-            session = db.Session()
-            query = select(db.Guess.id)
-            result = session.execute(query).all()
-            if result:
-                labeled_ids = [id_[0] for id_ in result]
-                unlabeled_ids = [i for i in range(0, 750) if i not in labeled_ids]
-                if unlabeled_ids:
-                    return random.choice(unlabeled_ids)
-                return 0
+            with db.Session() as session:
+                with session.begin():
+                    query = select(db.Guess.id)
+                    result = session.execute(query).all()
+                    if result:
+                        labeled_ids = [id_[0] for id_ in result]
+                        unlabeled_ids = [
+                            i for i in range(0, 750) if i not in labeled_ids
+                        ]
+                        if unlabeled_ids:
+                            return random.choice(unlabeled_ids)
+                        return 0
             return random.randint(0, 749)
 
         return random.randint(0, 749)
 
     @app.get("/load_info")
     def load_info(id_: int) -> PolitInfo:
-        session = db.Session()
-
-        img_info = (
-            session.query(db.MemberPhoto).filter(db.MemberPhoto.id == id_).first()
-        )
-        data = base64.b64encode(img_info.image).decode("utf-8")
-        info = PolitInfo(id=id_, img=data, img_ext=img_info.image_format)
-        logger.info("Loading info %s", info)
-        return info
+        with db.Session() as session:
+            with session.begin():
+                img_info = (
+                    session.query(db.MemberPhoto)
+                    .filter(db.MemberPhoto.id == id_)
+                    .first()
+                )
+                data = base64.b64encode(img_info.image).decode("utf-8")
+                info = PolitInfo(id=id_, img=data, img_ext=img_info.image_format)
+                logger.info("Loading info %s", info)
+                return info
 
     @app.get("/load_guess")
     def load_guess(id_: int) -> Optional[Guess]:
-        session = db.Session()
-        result = session.query(db.Guess).filter(db.Guess.id == id_).first()
+        with db.Session() as session:
+            with session.begin():
+                result = session.query(db.Guess).filter(db.Guess.id == id_).first()
 
         guess: Optional[Guess]
         if result is not None:
@@ -160,20 +166,19 @@ def init_app(debug):
 
     @app.post("/guess_party")
     def guess_party(guess: Guess):
-        session = db.Session()
-        id_ = guess.id
-        entry = session.query(db.Guess).filter(db.Guess.id == id_).first()
+        with db.Session() as session:
+            with session.begin():
+                id_ = guess.id
+                entry = session.query(db.Guess).filter(db.Guess.id == id_).first()
 
-        if entry:
-            logger.info("Update guess %s", guess)
-            entry.id = guess.id
-            entry.party = guess.party
-            entry.known = guess.known
-        else:
-            logger.info("Create new guess %s", guess)
-            session.add(db.Guess(**guess.__dict__))
-
-        session.commit()
+                if entry:
+                    logger.info("Update guess %s", guess)
+                    entry.id = guess.id
+                    entry.party = guess.party
+                    entry.known = guess.known
+                else:
+                    logger.info("Create new guess %s", guess)
+                    session.add(db.Guess(**guess.__dict__))
 
     return app
 
